@@ -1,0 +1,379 @@
+#include "graphics.hpp"
+
+#include <iostream>
+#include <sstream>
+#include <cstdlib>
+#include <vector>
+#include <cmath>
+
+#define font "LiberationSans-Regular.ttf"
+
+using namespace genv;
+using namespace std;
+
+const int size_x = 400, size_y = 400, boxSize = 4;
+
+#define btn_1_x size_x/2
+#define btn_1_y size_y/3
+#define btn_2_x size_x/2
+#define btn_2_y 2*size_y/3
+
+/// menu ///
+
+struct Menu {
+    bool full = true;
+    bool startt = false;
+    bool exitt = false;
+    bool endd = false;
+
+    void button_Start(int &R, int &G, int &B, canvas Button, event &ev) {
+
+        if(ev.type == ev_mouse){
+
+            if(ev.pos_x > btn_1_x-Button.twidth("Start")/2 && ev.pos_x < btn_1_x+Button.twidth("Start")/2 && ev.pos_y < btn_1_y && ev.pos_y > btn_1_y-Button.cascent()) {
+                R = 255;
+                G = 0;
+                B = 0;
+                if(ev.button == btn_left) {
+                    full = false;
+                    startt = true;
+                }
+            }
+            else{R = 255; G = 255; B = 255;}
+        }
+    }
+
+    void button_Exit(int &R, int &G, int &B, canvas Button, event &ev) {
+
+        if(ev.type == ev_mouse){
+            if(ev.pos_x > btn_2_x-Button.twidth("Exit")/2 && ev.pos_x < btn_2_x+Button.twidth("Exit")/2 && ev.pos_y < btn_2_y && ev.pos_y > btn_2_y-Button.cascent()) {
+                R = 255;
+                G = 0;
+                B = 0;
+                if(ev.button == btn_left){
+                    exit(0);
+                }
+            }
+            else{R = 255; G = 255; B = 255;}
+        }
+    }
+};
+
+/// clear ///
+
+void clear_gout() {
+    gout << move_to(0,0);
+    gout << color(0,0,0);
+    gout << box(size_x,size_y);
+}
+
+/// structs ///
+
+struct Coordinates {
+    int x;
+    int y;
+};
+
+struct Directions : public Coordinates {
+    bool up = false;
+    bool down = false;
+    bool right = false;
+    bool left = false;
+
+    bool exist = false;
+
+    int speed = 1;
+
+    void go() {
+        gout << color(255,255,255);
+        gout << move_to(x,y);
+        gout << box(boxSize,boxSize);
+
+    }
+
+    void go_up() {
+        y -= speed;
+        if(y <= 2) {
+        y = size_y-2;
+        }
+    }
+    void go_down() {
+        y += speed;
+        if(y >= size_y-2) {
+        y = 2;
+        }
+    }
+    void go_right() {
+        x += speed;
+        if(x >= size_x-2) {
+        x = 2;
+        }
+    }
+    void go_left() {
+        x -= speed;
+        if(x <= 2) {
+        x = size_x-2;
+        }
+    }
+};
+
+struct Points {
+    bool exist = false;
+
+    int x, y;
+    int currentPointInt = -1;
+
+    string currentPointString = " ";
+    stringstream sS;
+
+    void plusPoint() {
+        currentPointInt++;
+        sS << currentPointInt;
+        sS >> currentPointString;
+        sS.clear();
+    }
+
+    void newCoordinates() {
+        x = rand()%size_x;
+        y = rand()%size_y;
+
+        exist = true;
+    }
+
+    bool way(int currentX,int currentY) {
+       return sqrt(pow(x - currentX,2) + pow(y - currentY,2)) <= 4;
+    }
+
+    void relay() {
+        gout << color(0,255,0);
+        gout << move_to(x, y);
+        gout << box(boxSize,boxSize);
+    }
+
+    void  write() {
+        gout << color(255,0,0);
+        gout << move_to(20,20);
+        gout << text("Points: " + currentPointString);
+    }
+};
+
+int main() {
+    gout.open(size_x, size_y);
+    event ev;
+    gin.timer(10);
+    Points points;
+    Menu menu;
+
+    int startSize = 10;
+
+    vector <Directions> directionsVector;
+
+    for (unsigned i = 0; i < startSize; i++) {
+        Directions directions;
+        directionsVector.push_back(directions);
+    }
+
+    directionsVector[0].x = rand()%size_x;
+    directionsVector[0].y = rand()%size_y;
+    gout << color(255,255,255);
+    gout << move_to(directionsVector[0].x,directionsVector[0].y);
+
+
+    int R_1 = 0, G_1 = 0, B_1 = 0;
+    canvas Button_1;
+    Button_1.load_font(font, 60, false);
+    Button_1.open(size_x,size_y);
+
+    int R_2 = 0, G_2 = 0, B_2 = 0;
+    canvas Button_2;
+    Button_2.load_font(font, 60, false);
+    Button_2.open(size_x,size_y);
+
+/// ------------------------------ ///
+
+    while(gin >> ev && ev.keycode != key_escape) {
+
+            //cout << "x: " << directionsVector[0].x << "\ty: " << directionsVector[0].y << endl;
+            //cout << "point.x: " << points.x << "\tpoint.y: " << points.y << endl;
+            //cout << "directionsVector.size: " << directionsVector.size() << endl;
+
+/// menu ///
+
+        if(menu.full == true) {
+
+            if(menu.startt == false) {
+
+                Button_1 << move_to(0,Button_1.cascent()) << color(R_1,G_1,B_1) << text("Start");
+                gout << stamp(Button_1,btn_1_x-Button_1.twidth("Start")/2,btn_1_y-Button_1.cascent()*2);
+                menu.button_Start(R_1,G_1,B_1,Button_1,ev);
+
+                if(menu.endd == true) {
+                    points.currentPointInt = -1;
+                    points.plusPoint();
+                    for (unsigned i = 0; i < directionsVector.size()-startSize; i++) {
+                        directionsVector.erase(directionsVector.begin());
+                    }
+
+                    menu.endd == false;
+                }
+
+                if(directionsVector[0].exist == false && menu.startt == true) {
+                    for (unsigned i = 0; i < 1; i++) {
+                        Directions directions;
+                        directionsVector.push_back(directions);
+                    }
+
+                    directionsVector[0].x = rand()%size_x;
+                    directionsVector[0].y = rand()%size_y;
+                    gout << color(255,255,255);
+                    gout << move_to(directionsVector[0].x,directionsVector[0].y);
+                }
+
+            }
+
+            if(menu.exitt == false) {
+
+                Button_2 << move_to(0,Button_2.cascent()) << color(R_2,G_2,B_2) << text("Exit");
+                gout << stamp(Button_2,btn_2_x-Button_2.twidth("Exit")/2,btn_2_y-Button_2.cascent()*2);
+                menu.button_Exit(R_2,G_2,B_2,Button_2,ev);
+            }
+        }
+
+        if(ev.type != ev_mouse && menu.full == false &&  menu.startt == true) {
+            clear_gout();
+
+/// directions ///
+
+            if(ev.keycode == key_up && directionsVector[0].down != true) directionsVector[0].up = true;
+
+            if(directionsVector[0].up && directionsVector[0].down != true) {
+                directionsVector[0].down = false;
+                directionsVector[0].right = false;
+                directionsVector[0].left = false;
+
+                directionsVector[0].go_up();
+
+                for(unsigned i = directionsVector.size()-1; i > 0; i--) {
+                    directionsVector[i].x = directionsVector[i-1].x;
+                    directionsVector[i].y = directionsVector[i-1].y;
+
+                    directionsVector[i].go();
+                }
+            }
+
+            if(ev.keycode == key_down && directionsVector[0].up != true) directionsVector[0].down = true;
+
+            if(directionsVector[0].down && directionsVector[0].up != true) {
+                directionsVector[0].up = false;
+                directionsVector[0].right = false;
+                directionsVector[0].left = false;
+
+                directionsVector[0].go_down();
+
+                for(unsigned i = directionsVector.size()-1; i > 0; i--) {
+                    directionsVector[i].x = directionsVector[i-1].x;
+                    directionsVector[i].y = directionsVector[i-1].y;
+                    directionsVector[i].go();
+                }
+            }
+
+            if(ev.keycode == key_right && directionsVector[0].left != true) directionsVector[0].right = true;
+
+            if(directionsVector[0].right && directionsVector[0].left != true) {
+                directionsVector[0].up = false;
+                directionsVector[0].down = false;
+                directionsVector[0].left = false;
+
+                directionsVector[0].go_right();
+
+                for(unsigned i = directionsVector.size()-1; i > 0; i--) {
+                    directionsVector[i].x = directionsVector[i-1].x;
+                    directionsVector[i].y = directionsVector[i-1].y;
+                    directionsVector[i].go();
+                }
+            }
+
+            if(ev.keycode == key_left && directionsVector[0].right != true) directionsVector[0].left = true;
+
+            if(directionsVector[0].left && directionsVector[0].right != true) {
+                directionsVector[0].up = false;
+                directionsVector[0].down = false;
+                directionsVector[0].right = false;
+
+                directionsVector[0].go_left();
+
+                for(unsigned i = directionsVector.size()-1; i > 0; i--) {
+                    directionsVector[i].x = directionsVector[i-1].x;
+                    directionsVector[i].y = directionsVector[i-1].y;
+                    directionsVector[i].go();
+                }
+            }
+
+/// wall ///
+
+            gout << color(0,0,255);
+            gout << move_to((size_x/2-50),(size_y/2)-50);
+            gout << box(100,100);
+
+/// check ///
+
+            if(directionsVector.size() > 6) {
+                for(unsigned i = 6; i < directionsVector.size(); i++) {
+                    if(directionsVector[0].x == directionsVector[i].x && directionsVector[0].y == directionsVector[i].y) {
+                        gout << color(255,0,0);
+                        gout << move_to(20,40);
+                        gout << text("Game Over. Press ENTER to the new game.");
+                        directionsVector[0].speed = 0;
+                        directionsVector[0].exist = false;
+
+                        menu.endd = true;
+                    }
+                }
+            }
+
+            if(directionsVector[0].x > 148 && directionsVector[0].x < 248 && directionsVector[0].y > 148 && directionsVector[0].y < 248){
+                gout << color(255,0,0);
+                gout << move_to(20,40);
+                gout << text("Game Over. Press ENTER to the new game.");
+                directionsVector[0].speed = 0;
+                directionsVector[0].exist = false;
+
+                menu.endd = true;
+            }
+
+            if(ev.keycode == key_enter && menu.endd == true)
+            {
+                clear_gout();
+                menu.full = true;
+                menu.startt = false;
+                menu.exitt = false;
+                gout << refresh;
+            }
+
+/// cheat ///
+
+            if(ev.keycode == key_f1)
+            {
+                Directions directions;
+                directionsVector.push_back(directions);
+            }
+
+/// points ///
+
+            directionsVector[0].go();
+            if(menu.full == false) {
+                points.write();
+                points.relay();
+            }
+            if((points.way(directionsVector[0].x, directionsVector[0].y)) || (points.exist == false)) {
+                points.newCoordinates();
+                Directions directions;
+                directionsVector.push_back(directions);
+                points.plusPoint();
+            }
+        }
+
+        gout << refresh;
+    }
+    return 0;
+}
